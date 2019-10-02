@@ -8,6 +8,7 @@
 
   <modules>
     <module>org.jacoco.build</module>
+      <module>boundary-value-coverage</module>
   </modules>
 
 </project>
