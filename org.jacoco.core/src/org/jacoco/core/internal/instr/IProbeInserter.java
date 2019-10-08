@@ -16,7 +16,7 @@ package org.jacoco.core.internal.instr;
  * Internal interface for insertion of probes into in the instruction sequence
  * of a method.
  */
-interface IProbeInserter {
+public interface IProbeInserter {
 
 	/**
 	 * Inserts the probe with the given id.

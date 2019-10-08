@@ -25,7 +25,7 @@ import org.objectweb.asm.TypePath;
  * addition the probe array has to be retrieved at the beginning of the method
  * and stored in a local variable.
  */
-class ProbeInserter extends MethodVisitor implements IProbeInserter {
+public class ProbeInserter extends MethodVisitor implements IProbeInserter {
 
 	private final IProbeArrayStrategy arrayStrategy;
 
