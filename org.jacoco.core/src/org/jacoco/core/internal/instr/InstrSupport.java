@@ -8,7 +8,7 @@
  *
  * Contributors:
  *    Marc R. Hoffmann - initial API and implementation
- *    
+ *
  *******************************************************************************/
 package org.jacoco.core.internal.instr;
 
@@ -17,6 +17,7 @@ import static java.lang.String.format;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 
 /**
  * Constants and utilities for byte code instrumentation.
@@ -261,6 +262,31 @@ public final class InstrSupport {
 		} else {
 			mv.visitLdcInsn(Integer.valueOf(value));
 		}
+	}
+
+    /**
+     * Generates the instructions to duplicate the top double word size values (long and double) on the stack.
+     *
+     * @param mv visitor to emit the instructions
+     */
+	public static void dup4(final MethodVisitor mv) {
+		swap2(mv);
+		mv.visitInsn(Opcodes.DUP2_X2);
+		swap2(mv);
+		mv.visitInsn(Opcodes.DUP2_X2);
+	}
+
+
+	/**
+	 * Generates the instructions to swap the top two double word size values (long and double) on the stack.
+	 * Simplified version of the implementatino of
+     * {@link org.objectweb.asm.commons.GeneratorAdapter#swap(Type, Type)}.
+	 *
+	 * @param mv visitor to emit the instructions
+	 */
+	public static void swap2(final MethodVisitor mv) {
+		mv.visitInsn(Opcodes.DUP2_X2);
+		mv.visitInsn(Opcodes.POP2);
 	}
 
 	/**
