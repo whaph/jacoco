@@ -8,7 +8,7 @@
  *
  * Contributors:
  *    Marc R. Hoffmann - initial API and implementation
- *    
+ *
  *******************************************************************************/
 package org.jacoco.core.internal.instr;
 
@@ -26,10 +26,12 @@ import org.objectweb.asm.Opcodes;
 class MethodInstrumenter extends MethodProbesVisitor {
 
 	private final IProbeInserter probeInserter;
+	private final Boundaries boundaries;
+	private int additionalStackValues;
 
 	/**
 	 * Create a new instrumenter instance for the given method.
-	 * 
+	 *
 	 * @param mv
 	 *            next method visitor in the chain
 	 * @param probeInserter
@@ -39,6 +41,8 @@ class MethodInstrumenter extends MethodProbesVisitor {
 			final IProbeInserter probeInserter) {
 		super(mv);
 		this.probeInserter = probeInserter;
+		this.boundaries = new Boundaries(mv, probeInserter);
+		this.additionalStackValues = 0;
 	}
 
 	// === IMethodProbesVisitor ===
@@ -66,6 +70,26 @@ class MethodInstrumenter extends MethodProbesVisitor {
 			probeInserter.insertProbe(probeId);
 			mv.visitJumpInsn(Opcodes.GOTO, label);
 			mv.visitLabel(intermediate);
+			frame.accept(mv);
+		}
+	}
+
+	@Override
+	public void visitBoundaryInsnWithProbes(int opcode, Label label, int[] probeIds, IFrame frame) {
+		int variableStack = boundaries.visitBoundaryInsnWithProbes(opcode, probeIds);
+		this.additionalStackValues = Math.max(additionalStackValues, variableStack);
+		if (frame != null) {
+			frame.accept(mv);
+		}
+	}
+
+
+	@Override
+	public void visitLongBoundaryInsnWithProbes(int opcode, Label label, int[] probeIds, IFrame frame) {
+		int variableStack = boundaries.visitLongBoundaryInsnWithProbes(opcode, probeIds);
+		this.additionalStackValues = Math.max(additionalStackValues, variableStack);
+
+		if (frame != null) {
 			frame.accept(mv);
 		}
 	}
@@ -181,4 +205,8 @@ class MethodInstrumenter extends MethodProbesVisitor {
 		}
 	}
 
+	@Override
+	public void visitMaxs(int maxStack, int maxLocals) {
+		super.visitMaxs(maxStack + additionalStackValues, maxLocals);
+	}
 }

@@ -8,7 +8,7 @@
  *
  * Contributors:
  *    Marc R. Hoffmann - initial API and implementation
- *    
+ *
  *******************************************************************************/
 package org.jacoco.core.internal.flow;
 
@@ -27,161 +27,251 @@ import org.objectweb.asm.commons.AnalyzerAdapter;
  */
 public final class MethodProbesAdapter extends MethodVisitor {
 
-	private final MethodProbesVisitor probesVisitor;
+    private final MethodProbesVisitor probesVisitor;
 
-	private final IProbeIdGenerator idGenerator;
+    private final IProbeIdGenerator idGenerator;
 
-	private AnalyzerAdapter analyzer;
+    private AnalyzerAdapter analyzer;
 
-	private final Map<Label, Label> tryCatchProbeLabels;
+    private final Map<Label, Label> tryCatchProbeLabels;
 
-	/**
-	 * Create a new adapter instance.
-	 * 
-	 * @param probesVisitor
-	 *            visitor to delegate to
-	 * @param idGenerator
-	 *            generator for unique probe ids
-	 */
-	public MethodProbesAdapter(final MethodProbesVisitor probesVisitor,
-			final IProbeIdGenerator idGenerator) {
-		super(InstrSupport.ASM_API_VERSION, probesVisitor);
-		this.probesVisitor = probesVisitor;
-		this.idGenerator = idGenerator;
-		this.tryCatchProbeLabels = new HashMap<Label, Label>();
-	}
+    private final boolean instrumentBoundaryChecks = false;
 
-	/**
-	 * If an analyzer is set {@link IFrame} handles are calculated and emitted
-	 * to the probes methods.
-	 * 
-	 * @param analyzer
-	 *            optional analyzer to set
-	 */
-	public void setAnalyzer(final AnalyzerAdapter analyzer) {
-		this.analyzer = analyzer;
-	}
 
-	@Override
-	public void visitTryCatchBlock(final Label start, final Label end,
-			final Label handler, final String type) {
-		probesVisitor.visitTryCatchBlock(getTryCatchLabel(start), getTryCatchLabel(end),
-				handler, type);
-	}
+    /**
+     * Create a new adapter instance.
+     *
+     * @param probesVisitor visitor to delegate to
+     * @param idGenerator   generator for unique probe ids
+     */
+    public MethodProbesAdapter(final MethodProbesVisitor probesVisitor,
+                               final IProbeIdGenerator idGenerator) {
+        super(InstrSupport.ASM_API_VERSION, probesVisitor);
+        this.probesVisitor = probesVisitor;
+        this.idGenerator = idGenerator;
+        this.tryCatchProbeLabels = new HashMap<Label, Label>();
+    }
 
-	private Label getTryCatchLabel(Label label) {
-		if (tryCatchProbeLabels.containsKey(label)) {
-			label = tryCatchProbeLabels.get(label);
-		} else if (LabelInfo.needsProbe(label)) {
-			// If a probe will be inserted before the label, we'll need to use a
-			// different label to define the range of the try-catch block.
-			final Label probeLabel = new Label();
-			LabelInfo.setSuccessor(probeLabel);
-			tryCatchProbeLabels.put(label, probeLabel);
-			label = probeLabel;
-		}
-		return label;
-	}
+    /**
+     * If an analyzer is set {@link IFrame} handles are calculated and emitted
+     * to the probes methods.
+     *
+     * @param analyzer optional analyzer to set
+     */
+    public void setAnalyzer(final AnalyzerAdapter analyzer) {
+        this.analyzer = analyzer;
+    }
 
-	@Override
-	public void visitLabel(final Label label) {
-		if (LabelInfo.needsProbe(label)) {
-			if (tryCatchProbeLabels.containsKey(label)) {
-				probesVisitor.visitLabel(tryCatchProbeLabels.get(label));
-			}
-			probesVisitor.visitProbe(idGenerator.nextId());
-		}
-		probesVisitor.visitLabel(label);
-	}
+    @Override
+    public void visitTryCatchBlock(final Label start, final Label end,
+                                   final Label handler, final String type) {
+        probesVisitor.visitTryCatchBlock(getTryCatchLabel(start), getTryCatchLabel(end),
+                handler, type);
+    }
 
-	@Override
-	public void visitInsn(final int opcode) {
-		switch (opcode) {
-		case Opcodes.IRETURN:
-		case Opcodes.LRETURN:
-		case Opcodes.FRETURN:
-		case Opcodes.DRETURN:
-		case Opcodes.ARETURN:
-		case Opcodes.RETURN:
-		case Opcodes.ATHROW:
-			probesVisitor.visitInsnWithProbe(opcode, idGenerator.nextId());
-			break;
-		default:
-			probesVisitor.visitInsn(opcode);
-			break;
-		}
-	}
+    private Label getTryCatchLabel(Label label) {
+        if (tryCatchProbeLabels.containsKey(label)) {
+            label = tryCatchProbeLabels.get(label);
+        } else if (LabelInfo.needsProbe(label)) {
+            // If a probe will be inserted before the label, we'll need to use a
+            // different label to define the range of the try-catch block.
+            final Label probeLabel = new Label();
+            LabelInfo.setSuccessor(probeLabel);
+            tryCatchProbeLabels.put(label, probeLabel);
+            label = probeLabel;
+        }
+        return label;
+    }
 
-	@Override
-	public void visitJumpInsn(final int opcode, final Label label) {
-		if (LabelInfo.isMultiTarget(label)) {
-			probesVisitor.visitJumpInsnWithProbe(opcode, label,
-					idGenerator.nextId(), frame(jumpPopCount(opcode)));
-		} else {
-			probesVisitor.visitJumpInsn(opcode, label);
-		}
-	}
+    @Override
+    public void visitLabel(final Label label) {
+        if (LabelInfo.needsProbe(label)) {
+            if (tryCatchProbeLabels.containsKey(label)) {
+                probesVisitor.visitLabel(tryCatchProbeLabels.get(label));
+            }
+            probesVisitor.visitProbe(idGenerator.nextId());
+        }
+        probesVisitor.visitLabel(label);
+    }
 
-	private int jumpPopCount(final int opcode) {
-		switch (opcode) {
-		case Opcodes.GOTO:
-			return 0;
-		case Opcodes.IFEQ:
-		case Opcodes.IFNE:
-		case Opcodes.IFLT:
-		case Opcodes.IFGE:
-		case Opcodes.IFGT:
-		case Opcodes.IFLE:
-		case Opcodes.IFNULL:
-		case Opcodes.IFNONNULL:
-			return 1;
-		default: // IF_CMPxx and IF_ACMPxx
-			return 2;
-		}
-	}
+    @Override
+    public void visitInsn(final int opcode) {
+        switch (opcode) {
+            case Opcodes.IRETURN:
+            case Opcodes.LRETURN:
+            case Opcodes.FRETURN:
+            case Opcodes.DRETURN:
+            case Opcodes.ARETURN:
+            case Opcodes.RETURN:
+            case Opcodes.ATHROW:
+                probesVisitor.visitInsnWithProbe(opcode, idGenerator.nextId());
+                break;
+            default:
+                probesVisitor.visitInsn(opcode);
+                break;
+        }
+    }
 
-	@Override
-	public void visitLookupSwitchInsn(final Label dflt, final int[] keys,
-			final Label[] labels) {
-		if (markLabels(dflt, labels)) {
-			probesVisitor.visitLookupSwitchInsnWithProbes(dflt, keys, labels,
-					frame(1));
-		} else {
-			probesVisitor.visitLookupSwitchInsn(dflt, keys, labels);
-		}
-	}
+    @Override
+    public void visitJumpInsn(final int opcode, final Label label) {
+        visitBoundary(opcode, label);
+        if (LabelInfo.isMultiTarget(label)) {
+            probesVisitor.visitJumpInsnWithProbe(opcode, label,
+                    idGenerator.nextId(), frame(jumpPopCount(opcode)));
+        } else {
+            probesVisitor.visitJumpInsn(opcode, label);
+        }
+    }
 
-	@Override
-	public void visitTableSwitchInsn(final int min, final int max,
-			final Label dflt, final Label... labels) {
-		if (markLabels(dflt, labels)) {
-			probesVisitor.visitTableSwitchInsnWithProbes(min, max, dflt,
-					labels, frame(1));
-		} else {
-			probesVisitor.visitTableSwitchInsn(min, max, dflt, labels);
-		}
-	}
+    private void visitBoundary(int opcode, Label label) {
+        if (!instrumentBoundaryChecks) {
+            if (probesVisitor.isLastInsnLCMP())
+                probesVisitor.visitLCMP();
+            return;
+        }
+        if (isIF_ICMPxx(opcode) || /* TODO vllt sollte ich vergleich mit 0 weglassen */
+                (isBranchCompareZero(opcode) && probesVisitor.isLastInsnTrueIntInsn())) {
+            probesVisitor.visitBoundaryInsnWithProbes(opcode, label, getProbes(opcode), frame(jumpPopCount(opcode)));
+        }
 
-	private boolean markLabels(final Label dflt, final Label[] labels) {
-		boolean probe = false;
-		LabelInfo.resetDone(labels);
-		if (LabelInfo.isMultiTarget(dflt)) {
-			LabelInfo.setProbeId(dflt, idGenerator.nextId());
-			probe = true;
-		}
-		LabelInfo.setDone(dflt);
-		for (final Label l : labels) {
-			if (LabelInfo.isMultiTarget(l) && !LabelInfo.isDone(l)) {
-				LabelInfo.setProbeId(l, idGenerator.nextId());
-				probe = true;
-			}
-			LabelInfo.setDone(l);
-		}
-		return probe;
-	}
+        if (probesVisitor.isLastInsnLCMP()) {
+            if (isBranchCompareZero(opcode)) {
+                visitLongBoundary(opcode, label);
+            }
+            probesVisitor.visitLCMP();
+        }
 
-	private IFrame frame(final int popCount) {
-		return FrameSnapshot.create(analyzer, popCount);
-	}
+    }
+
+    private void visitLongBoundary(int opcode, Label label) {
+        probesVisitor.visitLongBoundaryInsnWithProbes(opcode, label, getProbes(opcode), frame(1));
+
+    }
+
+    private int[] getProbes(int opcode) {
+        int checkCount = bvChecks(opcode);
+        int[] probeIds = new int[checkCount];
+        for (int i = 0; i < checkCount; i++) {
+            probeIds[i] = idGenerator.nextId();
+        }
+        return probeIds;
+    }
+
+    private int bvChecks(int opcode) {
+        switch (opcode) {
+            case Opcodes.IFEQ:
+            case Opcodes.IFNE:
+            case Opcodes.IF_ICMPEQ:
+            case Opcodes.IF_ICMPNE:
+                return 3;
+            case Opcodes.IFLT:
+            case Opcodes.IFGE:
+            case Opcodes.IFGT:
+            case Opcodes.IFLE:
+            case Opcodes.IF_ICMPLT:
+            case Opcodes.IF_ICMPGE:
+            case Opcodes.IF_ICMPGT:
+            case Opcodes.IF_ICMPLE:
+                return 2;
+        }
+
+        throw new IllegalArgumentException();
+    }
+
+    /**
+     * Tells if the opcodes is of the if_icmp{@literal <cond>} family.
+     *
+     * @param opcode the opcode
+     * @return <code>true</code> if int compare jump, else <code>false</code>.
+     */
+    private boolean isIF_ICMPxx(final int opcode) {
+        switch (opcode) {
+            case Opcodes.IF_ICMPEQ:
+            case Opcodes.IF_ICMPNE:
+            case Opcodes.IF_ICMPLT:
+            case Opcodes.IF_ICMPGE:
+            case Opcodes.IF_ICMPGT:
+            case Opcodes.IF_ICMPLE:
+                return true;
+        }
+
+        return false;
+    }
+
+    private int jumpPopCount(final int opcode) {
+        switch (opcode) {
+            case Opcodes.GOTO:
+                return 0;
+            case Opcodes.IFEQ:
+            case Opcodes.IFNE:
+            case Opcodes.IFLT:
+            case Opcodes.IFGE:
+            case Opcodes.IFGT:
+            case Opcodes.IFLE:
+            case Opcodes.IFNULL:
+            case Opcodes.IFNONNULL:
+                return 1;
+            default: // IF_CMPxx and IF_ACMPxx
+                return 2;
+        }
+    }
+
+    @Override
+    public void visitLookupSwitchInsn(final Label dflt, final int[] keys,
+                                      final Label[] labels) {
+        if (markLabels(dflt, labels)) {
+            probesVisitor.visitLookupSwitchInsnWithProbes(dflt, keys, labels,
+                    frame(1));
+        } else {
+            probesVisitor.visitLookupSwitchInsn(dflt, keys, labels);
+        }
+    }
+
+    @Override
+    public void visitTableSwitchInsn(final int min, final int max,
+                                     final Label dflt, final Label... labels) {
+        if (markLabels(dflt, labels)) {
+            probesVisitor.visitTableSwitchInsnWithProbes(min, max, dflt,
+                    labels, frame(1));
+        } else {
+            probesVisitor.visitTableSwitchInsn(min, max, dflt, labels);
+        }
+    }
+
+    private boolean isBranchCompareZero(int opcode) {
+        switch (opcode) {
+            case Opcodes.IFEQ:
+            case Opcodes.IFNE:
+            case Opcodes.IFLT:
+            case Opcodes.IFLE:
+            case Opcodes.IFGT:
+            case Opcodes.IFGE:
+                return true;
+        }
+
+        return false;
+    }
+
+    private boolean markLabels(final Label dflt, final Label[] labels) {
+        boolean probe = false;
+        LabelInfo.resetDone(labels);
+        if (LabelInfo.isMultiTarget(dflt)) {
+            LabelInfo.setProbeId(dflt, idGenerator.nextId());
+            probe = true;
+        }
+        LabelInfo.setDone(dflt);
+        for (final Label l : labels) {
+            if (LabelInfo.isMultiTarget(l) && !LabelInfo.isDone(l)) {
+                LabelInfo.setProbeId(l, idGenerator.nextId());
+                probe = true;
+            }
+            LabelInfo.setDone(l);
+        }
+        return probe;
+    }
+
+    private IFrame frame(final int popCount) {
+        return FrameSnapshot.create(analyzer, popCount);
+    }
 
 }

@@ -12,11 +12,6 @@
  *******************************************************************************/
 package org.jacoco.examples;
 
-import java.io.InputStream;
-import java.io.PrintStream;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.jacoco.core.analysis.Analyzer;
 import org.jacoco.core.analysis.CoverageBuilder;
 import org.jacoco.core.analysis.IClassCoverage;
@@ -27,6 +22,11 @@ import org.jacoco.core.instr.Instrumenter;
 import org.jacoco.core.runtime.IRuntime;
 import org.jacoco.core.runtime.LoggerRuntime;
 import org.jacoco.core.runtime.RuntimeData;
+
+import java.io.InputStream;
+import java.io.PrintStream;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Example usage of the JaCoCo core API. In this tutorial a single target class
@@ -51,6 +51,20 @@ public final class CoreTutorial {
 				}
 			}
 			return true;
+		}
+
+		private void testBv(long a, long b) {
+			if (a < b) {
+				System.out.println("a < b");
+			}
+
+			if (a == b) {
+				System.out.println("a == b");
+			}
+
+			if (a > b) {
+				System.out.println("a > b");
+			}
 		}
 
 	}
@@ -122,6 +136,7 @@ public final class CoreTutorial {
 		// runtime first:
 		final RuntimeData data = new RuntimeData();
 		runtime.startup(data);
+
 
 		// In this tutorial we use a special class loader to directly load the
 		// instrumented class definition from a byte[] instances.
