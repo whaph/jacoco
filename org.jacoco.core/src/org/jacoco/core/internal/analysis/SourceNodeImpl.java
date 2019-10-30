@@ -84,6 +84,7 @@ public class SourceNodeImpl extends CoverageNodeImpl implements ISourceNode {
 		instructionCounter = instructionCounter.increment(child
 				.getInstructionCounter());
 		branchCounter = branchCounter.increment(child.getBranchCounter());
+		boundaryCounter = boundaryCounter.increment(child.getBoundaryCounter());
 		complexityCounter = complexityCounter.increment(child
 				.getComplexityCounter());
 		methodCounter = methodCounter.increment(child.getMethodCounter());
@@ -95,7 +96,7 @@ public class SourceNodeImpl extends CoverageNodeImpl implements ISourceNode {
 			for (int i = firstLine; i <= lastLine; i++) {
 				final ILine line = child.getLine(i);
 				incrementLine(line.getInstructionCounter(),
-						line.getBranchCounter(), i);
+						line.getBranchCounter(), line.getBoundaryCounter(), i);
 			}
 		}
 	}
@@ -114,20 +115,27 @@ public class SourceNodeImpl extends CoverageNodeImpl implements ISourceNode {
 	 */
 	public void increment(final ICounter instructions, final ICounter branches,
 			final int line) {
+		increment(instructions, branches, CounterImpl.COUNTER_0_0, line);
+	}
+
+	public void increment(final ICounter instructions, final ICounter branches, final ICounter boundaries,
+						  final int line) {
 		if (line != UNKNOWN_LINE) {
-			incrementLine(instructions, branches, line);
+			incrementLine(instructions, branches, boundaries, line);
 		}
 		instructionCounter = instructionCounter.increment(instructions);
 		branchCounter = branchCounter.increment(branches);
+		boundaryCounter = boundaryCounter.increment(boundaries);
 	}
 
+
 	private void incrementLine(final ICounter instructions,
-			final ICounter branches, final int line) {
+			final ICounter branches, final ICounter boundaries, final int line) {
 		ensureCapacity(line, line);
 		final LineImpl l = getLine(line);
 		final int oldTotal = l.getInstructionCounter().getTotalCount();
 		final int oldCovered = l.getInstructionCounter().getCoveredCount();
-		lines[line - offset] = l.increment(instructions, branches);
+		lines[line - offset] = l.increment(instructions, branches, boundaries);
 
 		// Increment line counter:
 		if (instructions.getTotalCount() > 0) {

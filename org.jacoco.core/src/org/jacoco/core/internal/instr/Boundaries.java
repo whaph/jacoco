@@ -106,6 +106,7 @@ final class Boundaries {
         mv.visitJumpInsn(Opcodes.IFNE, intermediate);
         // Stack[0] : I
         probeInserter.insertProbe(midBvProbeId); // MIDDLE a == 0
+        mv.visitLabel(intermediate);
         return 2;
     }
 

@@ -50,6 +50,7 @@ public class MethodAnalyzer extends MethodProbesVisitor {
 		for (final AbstractInsnNode i : methodNode.instructions) {
 			currentNode = i;
 			i.accept(methodVisitor);
+			memorizer.setLastInstruction(currentNode);
 		}
 		methodVisitor.visitEnd();
 	}
@@ -205,5 +206,32 @@ public class MethodAnalyzer extends MethodProbesVisitor {
 			LabelInfo.setDone(label);
 		}
 	}
+
+
+	@Override
+	public void visitBoundaryInsnWithProbes(int opcode, Label label, int[] probeIds, IFrame frame) {
+		visitBoundary(probeIds);
+	}
+
+	private void visitBoundary(int[] probeIds) {
+		switch (probeIds.length) {
+			case 2:
+				builder.addCheck(probeIds[0], Boundary.Kind.LEFT);
+				builder.addCheck(probeIds[1], Boundary.Kind.RIGHT);
+				break;
+			case 3:
+				builder.addCheck(probeIds[0], Boundary.Kind.LEFT);
+				builder.addCheck(probeIds[1], Boundary.Kind.MIDDLE);
+				builder.addCheck(probeIds[2], Boundary.Kind.RIGHT);
+		}
+
+		builder.addBoundary(currentNode);
+	}
+
+	@Override
+	public void visitLongBoundaryInsnWithProbes(int opcode, Label label, int[] probeIds, IFrame frame) {
+		visitBoundary(probeIds);
+	}
+
 
 }

@@ -12,12 +12,10 @@
  *******************************************************************************/
 package org.jacoco.core.internal.analysis;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import org.jacoco.core.analysis.ISourceNode;
+import org.jacoco.core.data.ExecutionDataStore;
 import org.jacoco.core.internal.flow.LabelInfo;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -57,6 +55,8 @@ class InstructionsBuilder {
 	 * temporarily as the target {@link Instruction} may not been known yet.
 	 */
 	private final List<Jump> jumps;
+	private List<Boundary.Check> currentChecks;
+	private final HashMap<AbstractInsnNode, Boundary> boundaries;
 
 	/**
 	 * Creates a new builder instance which can be used to analyze a single
@@ -73,6 +73,8 @@ class InstructionsBuilder {
 		this.instructions = new HashMap<AbstractInsnNode, Instruction>();
 		this.currentLabel = new ArrayList<Label>(2);
 		this.jumps = new ArrayList<Jump>();
+		this.currentChecks = new LinkedList<Boundary.Check>();
+		this.boundaries = new HashMap<AbstractInsnNode, Boundary>();
 	}
 
 	/**
@@ -164,6 +166,20 @@ class InstructionsBuilder {
 		}
 
 		return instructions;
+	}
+
+	public HashMap<AbstractInsnNode, Boundary> getBoundaries() {
+		return boundaries;
+	}
+
+	void addCheck(int probeId, Boundary.Kind kind) {
+		final boolean covered = probes != null && probes[probeId];
+		currentChecks.add(new Boundary.Check(covered, kind));
+	}
+
+	void addBoundary(AbstractInsnNode currentNode) {
+		boundaries.put(currentNode, new Boundary(currentLine, new LinkedList<Boundary.Check>(currentChecks)));
+		currentChecks.clear();
 	}
 
 	private static class Jump {

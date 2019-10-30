@@ -79,7 +79,7 @@ public class ClassProbesAdapter extends ClassVisitor implements
 				super.visitEnd();
 				LabelFlowAnalyzer.markLabels(this);
 				final MethodProbesAdapter probesAdapter = new MethodProbesAdapter(
-						methodProbes, ClassProbesAdapter.this);
+						methodProbes, ClassProbesAdapter.this, true);
 				if (trackFrames) {
 					final AnalyzerAdapter analyzer = new AnalyzerAdapter(
 							ClassProbesAdapter.this.name, access, name, desc,

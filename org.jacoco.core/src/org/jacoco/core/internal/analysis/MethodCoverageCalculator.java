@@ -12,14 +12,10 @@
  *******************************************************************************/
 package org.jacoco.core.internal.analysis;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
 
+import org.jacoco.core.analysis.ICounter;
 import org.jacoco.core.analysis.ISourceFileCoverage;
 import org.jacoco.core.analysis.ISourceNode;
 import org.jacoco.core.internal.analysis.filter.IFilterOutput;
@@ -50,13 +46,20 @@ class MethodCoverageCalculator implements IFilterOutput {
 	private final Map<AbstractInsnNode, AbstractInsnNode> merged;
 
 	private final Map<AbstractInsnNode, Set<AbstractInsnNode>> replacements;
+	private final Map<AbstractInsnNode, Boundary> boundaries;
 
-	MethodCoverageCalculator(
-			final Map<AbstractInsnNode, Instruction> instructions) {
+	MethodCoverageCalculator(final Map<AbstractInsnNode, Instruction> instructions,
+							 final Map<AbstractInsnNode, Boundary> boundaries) {
 		this.instructions = instructions;
 		this.ignored = new HashSet<AbstractInsnNode>();
 		this.merged = new HashMap<AbstractInsnNode, AbstractInsnNode>();
 		this.replacements = new HashMap<AbstractInsnNode, Set<AbstractInsnNode>>();
+		this.boundaries = boundaries;
+	}
+
+	MethodCoverageCalculator(
+			final Map<AbstractInsnNode, Instruction> instructions) {
+		this(instructions, Collections.<AbstractInsnNode, Boundary>emptyMap());
 	}
 
 	/**
@@ -67,6 +70,15 @@ class MethodCoverageCalculator implements IFilterOutput {
 	 *            the result is added to this coverage node
 	 */
 	void calculate(final MethodCoverageImpl coverage) {
+
+		for (Entry<AbstractInsnNode, Boundary> boundary: boundaries.entrySet()) {
+			final Instruction instruction = instructions.get(boundary.getKey());
+			if (instruction != null) {
+				instruction.setBoundary(boundary.getValue());
+			}
+		}
+
+
 		applyMerges();
 		applyReplacements();
 		ensureCapacity(coverage);
@@ -76,7 +88,7 @@ class MethodCoverageCalculator implements IFilterOutput {
 			if (!ignored.contains(entry.getKey())) {
 				final Instruction instruction = entry.getValue();
 				coverage.increment(instruction.getInstructionCounter(),
-						instruction.getBranchCounter(), instruction.getLine());
+						instruction.getBranchCounter(), instruction.getBoundaryCounter(), instruction.getLine());
 			}
 		}
 

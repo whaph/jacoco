@@ -28,10 +28,10 @@ import org.objectweb.asm.tree.*;
  * Additionally the {@link org.objectweb.asm.Opcodes#NOP NOP-Instruction} won't be memorized, but still committed to the next
  * {@link org.objectweb.asm.MethodVisitor MethodVisitor} in the chain.)
  */
-public class LastInstructionMemorizerMethodVisitor extends MethodVisitor {
+public class LastInsnMemorizer extends MethodVisitor {
     private AbstractInsnNode lastInstruction = null;
 
-    public LastInstructionMemorizerMethodVisitor(final MethodVisitor methodVisitor) {
+    public LastInsnMemorizer(final MethodVisitor methodVisitor) {
         super(InstrSupport.ASM_API_VERSION, methodVisitor);
     }
 
@@ -43,7 +43,7 @@ public class LastInstructionMemorizerMethodVisitor extends MethodVisitor {
     AbstractInsnNode getLastInstruction() {
         return lastInstruction;
     }
-    void setLastInstruction(AbstractInsnNode lastInstruction) {
+    public void setLastInstruction(AbstractInsnNode lastInstruction) {
         // TODO sollte irgendwann auch ohne gehen
         this.lastInstruction = lastInstruction;
     }

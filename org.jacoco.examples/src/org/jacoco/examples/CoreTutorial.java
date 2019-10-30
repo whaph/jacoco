@@ -12,17 +12,20 @@
  *******************************************************************************/
 package org.jacoco.examples;
 
-import org.jacoco.core.analysis.Analyzer;
-import org.jacoco.core.analysis.CoverageBuilder;
-import org.jacoco.core.analysis.IClassCoverage;
-import org.jacoco.core.analysis.ICounter;
+import org.jacoco.core.analysis.*;
 import org.jacoco.core.data.ExecutionDataStore;
 import org.jacoco.core.data.SessionInfoStore;
 import org.jacoco.core.instr.Instrumenter;
 import org.jacoco.core.runtime.IRuntime;
 import org.jacoco.core.runtime.LoggerRuntime;
 import org.jacoco.core.runtime.RuntimeData;
+import org.jacoco.report.DirectorySourceFileLocator;
+import org.jacoco.report.FileMultiReportOutput;
+import org.jacoco.report.IReportVisitor;
+import org.jacoco.report.html.HTMLFormatter;
 
+import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.HashMap;
@@ -42,6 +45,11 @@ public final class CoreTutorial {
 
 		public void run() {
 			isPrime(7);
+			isPrime(8);
+			isPrime(0);
+			isPrime(1);
+			testBv(1,1);
+			testBv(0, 1);
 		}
 
 		private boolean isPrime(final int n) {
@@ -143,7 +151,6 @@ public final class CoreTutorial {
 		final MemoryClassLoader memoryClassLoader = new MemoryClassLoader();
 		memoryClassLoader.addDefinition(targetName, instrumented);
 		final Class<?> targetClass = memoryClassLoader.loadClass(targetName);
-
 		// Here we execute our test target class through its Runnable interface:
 		final Runnable targetInstance = (Runnable) targetClass.newInstance();
 		targetInstance.run();
@@ -163,6 +170,9 @@ public final class CoreTutorial {
 		analyzer.analyzeClass(original, targetName);
 		original.close();
 
+		final IBundleCoverage node = coverageBuilder.getBundle("test report");
+		createReport(node, executionData, sessionInfos);
+
 		// Let's dump some metrics and line coverage information:
 		for (final IClassCoverage cc : coverageBuilder.getClasses()) {
 			out.printf("Coverage of class %s%n", cc.getName());
@@ -170,6 +180,7 @@ public final class CoreTutorial {
 			printCounter("instructions", cc.getInstructionCounter());
 			printCounter("branches", cc.getBranchCounter());
 			printCounter("lines", cc.getLineCounter());
+			printCounter("boundaries", cc.getBoundaryCounter());
 			printCounter("methods", cc.getMethodCounter());
 			printCounter("complexity", cc.getComplexityCounter());
 
@@ -178,6 +189,34 @@ public final class CoreTutorial {
 						getColor(cc.getLine(i).getStatus()));
 			}
 		}
+	}
+
+	private void createReport(final IBundleCoverage bundleCoverage, ExecutionDataStore executionData, SessionInfoStore sessionInfos)
+			throws IOException {
+
+		// Create a concrete report visitor based on some supplied
+		// configuration. In this case we use the defaults
+		final HTMLFormatter htmlFormatter = new HTMLFormatter();
+		final File baseDir = new File("C:\\Users\\ayilmaz\\Documents\\");
+		baseDir.mkdirs();
+		final IReportVisitor visitor = htmlFormatter
+				.createVisitor(new FileMultiReportOutput(baseDir));
+
+		// Initialize the report with all of the execution and session
+		// information. At this point the report doesn't know about the
+		// structure of the report being created
+		visitor.visitInfo(sessionInfos.getInfos(),
+				executionData.getContents());
+
+		// Populate the report structure with the bundle coverage information.
+		// Call visitGroup if you need groups in your report.
+		visitor.visitBundle(bundleCoverage, new DirectorySourceFileLocator(
+				new File("C:\\Users\\ayilmaz\\Documents\\git\\BA\\bv-jacoco\\jacoco\\org.jacoco.examples\\src\\"), "utf-8", 4));
+
+		// Signal end of structure information to allow report to write all
+		// information out
+		visitor.visitEnd();
+
 	}
 
 	private InputStream getTargetClass(final String name) {

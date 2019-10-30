@@ -61,6 +61,8 @@ public class Instruction {
 
 	private final BitSet coveredBranches;
 
+	private Boundary boundary;
+
 	private Instruction predecessor;
 
 	private int predecessorBranch;
@@ -155,6 +157,7 @@ public class Instruction {
 		result.branches = this.branches;
 		result.coveredBranches.or(this.coveredBranches);
 		result.coveredBranches.or(other.coveredBranches);
+		result.boundary = boundary != null ? boundary.merge(other.boundary) : null;
 		return result;
 	}
 
@@ -178,6 +181,10 @@ public class Instruction {
 			}
 		}
 		return result;
+	}
+
+	public void setBoundary(Boundary boundary) {
+		this.boundary = boundary;
 	}
 
 	/**
@@ -205,4 +212,7 @@ public class Instruction {
 		return CounterImpl.getInstance(branches - covered, covered);
 	}
 
+	public ICounter getBoundaryCounter() {
+		return boundary != null ? boundary.getCounter() : CounterImpl.COUNTER_0_0;
+	}
 }

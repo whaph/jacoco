@@ -115,7 +115,7 @@ public class ClassAnalyzer extends ClassProbesVisitor
 			final String signature, final InstructionsBuilder icc,
 			final MethodNode methodNode) {
 		final MethodCoverageCalculator mcc = new MethodCoverageCalculator(
-				icc.getInstructions());
+				icc.getInstructions(), icc.getBoundaries());
 		filter.filter(methodNode, this, mcc);
 
 		final MethodCoverageImpl mc = new MethodCoverageImpl(name, desc,

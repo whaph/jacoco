@@ -25,7 +25,7 @@ import org.objectweb.asm.tree.*;
  */
 public abstract class MethodProbesVisitor extends MethodVisitor {
 
-    private final LastInstructionMemorizerMethodVisitor memorizer;
+    protected final LastInsnMemorizer memorizer;
 
     /**
      * New visitor instance without delegate visitor.
@@ -41,7 +41,7 @@ public abstract class MethodProbesVisitor extends MethodVisitor {
      */
     public MethodProbesVisitor(final MethodVisitor mv) {
         super(InstrSupport.ASM_API_VERSION, null);
-        this.memorizer = new LastInstructionMemorizerMethodVisitor(mv);
+        this.memorizer = new LastInsnMemorizer(mv);
         this.mv = this.memorizer;
     }
 
@@ -162,7 +162,6 @@ public abstract class MethodProbesVisitor extends MethodVisitor {
      *               instruction. The instance is only valid with the call of this
      *               method.
      * @see MethodVisitor#visitTableSwitchInsn(int, int, Label, Label[])
-     * @see MethodProbesVisitor#isLastInsnTrueIntInsn()
      */
     @SuppressWarnings("unused")
     public void visitTableSwitchInsnWithProbes(final int min, final int max,
@@ -206,69 +205,46 @@ public abstract class MethodProbesVisitor extends MethodVisitor {
     }
 
     /**
-     * Checks if the last instruction leaves an (<a href="https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-2.html#jvms-2.11.1-320">actual type</a>)
-     * int on the stack.
+     * Checks if the last instruction might leave a boolean on the stack.
      *
-     * @return <code>true</code> if last instruction opcode is D2I, F2I, L2I, IADD, ISUB, IDIV, IREM, IMUL, ISHL, ISHR,
-     * IOR, IXOR, IAND, INEG, ILOAD, IALOAD or getting an int field or calling a method that returns an int, else <code>false</code>
+     * @return <code>true</code> if last instruction is not <code>null</code> and
+     * is sure to never leave a boolean on the stack, else <code>false</code>
      */
-    boolean isLastInsnTrueIntInsn() {
+    boolean isTopStackValueNoBoolean() {
         AbstractInsnNode lastInstruction = memorizer.getLastInstruction();
         if (lastInstruction == null) {
             return false;
         }
 
-        // ICONST_<n>, bipush and sipush are not part of it since comparing a constant against a zero constant is simply stupid
-        // and in the case of ICONST_0 and ICONST_1 it is possible that those are meant as booleans and not as numbers
         switch (lastInstruction.getOpcode()) {
-        case Opcodes.D2I:
-        case Opcodes.F2I:
-        case Opcodes.L2I:
-        case Opcodes.IADD:
-        case Opcodes.ISUB:
-        case Opcodes.IDIV:
-        case Opcodes.IREM:
-        case Opcodes.IMUL:
-        case Opcodes.ISHL:
-        case Opcodes.ISHR:
-        case Opcodes.INEG:
-        case Opcodes.ILOAD:
-        case Opcodes.IALOAD:
-        // TODO kann auch fuer booleans verwendet werden
-        case Opcodes.IAND:
-        case Opcodes.IXOR:
-        case Opcodes.IOR:
-            return true;
+            case Opcodes.BALOAD:
+            case Opcodes.ILOAD:
+            case Opcodes.IAND:
+            case Opcodes.IOR:
+            case Opcodes.IXOR:
+            case Opcodes.LAND:
+            case Opcodes.LOR:
+            case Opcodes.LXOR:
+            case Opcodes.ICONST_0:
+            case Opcodes.ICONST_1:
+                return false;
+            case Opcodes.ARRAYLENGTH:
+                return true;
         }
 
         if (lastInstruction instanceof FieldInsnNode) {
-            switch (lastInstruction.getOpcode()) {
-                case Opcodes.GETSTATIC:
-                case Opcodes.GETFIELD:
-                    return ((FieldInsnNode) lastInstruction).desc.equals("I");
-
-                default:
-                    return false;
-            }
+            return !((FieldInsnNode) lastInstruction).desc.equals("Z");
         }
 
         if (lastInstruction instanceof MethodInsnNode) {
-            switch (lastInstruction.getOpcode()) {
-                case Opcodes.INVOKEVIRTUAL:
-                case Opcodes.INVOKESPECIAL:
-                case Opcodes.INVOKESTATIC:
-                case Opcodes.INVOKEINTERFACE:
-                    return Type.getReturnType(((MethodInsnNode) lastInstruction).desc).getDescriptor().equals("I");
-                default:
-                    return false;
-            }
+            return !Type.getReturnType(((MethodInsnNode) lastInstruction).desc).getDescriptor().equals("Z");
         }
 
         if (lastInstruction instanceof InvokeDynamicInsnNode) {
-            return Type.getReturnType(((InvokeDynamicInsnNode) lastInstruction).desc).getDescriptor().equals("I");
+            return !Type.getReturnType(((InvokeDynamicInsnNode) lastInstruction).desc).getDescriptor().equals("Z");
         }
 
-        return false;
+        return true;
     }
 
     boolean isLastInsnLCMP() {

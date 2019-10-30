@@ -57,6 +57,9 @@ public interface ICoverageNode {
 		/** Counter for source lines */
 		LINE,
 
+		/** Counter for boundaries */
+		BOUNDARY,
+
 		/** Counter for cyclomatic complexity */
 		COMPLEXITY,
 
@@ -101,6 +104,13 @@ public interface ICoverageNode {
 	 * @return counter for lines
 	 */
 	ICounter getLineCounter();
+
+	/**
+	 * Returns the counter for boundaries.
+	 *
+	 * @return counter for boundaries
+	 */
+	ICounter getBoundaryCounter();
 
 	/**
 	 * Returns the counter for cyclomatic complexity.

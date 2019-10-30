@@ -33,6 +33,14 @@ public interface ILine {
 	ICounter getBranchCounter();
 
 	/**
+	 * Returns the boundary counter for this line.
+	 *
+	 * @return boundary counter
+	 */
+	ICounter getBoundaryCounter();
+
+
+	/**
 	 * Returns the coverage status of this line, calculated from the
 	 * instructions counter and branch counter.
 	 * 

@@ -35,8 +35,23 @@ public final class MethodProbesAdapter extends MethodVisitor {
 
     private final Map<Label, Label> tryCatchProbeLabels;
 
-    private final boolean instrumentBoundaryChecks = false;
+    private final boolean instrumentBoundaryChecks;
 
+    /**
+     * Create a new adapter instance.
+     *
+     * @param probesVisitor visitor to delegate to
+     * @param idGenerator   generator for unique probe ids
+     */
+    public MethodProbesAdapter(final MethodProbesVisitor probesVisitor,
+                               final IProbeIdGenerator idGenerator,
+                               final boolean instrumentBoundaryChecks) {
+        super(InstrSupport.ASM_API_VERSION, probesVisitor);
+        this.probesVisitor = probesVisitor;
+        this.idGenerator = idGenerator;
+        this.tryCatchProbeLabels = new HashMap<Label, Label>();
+        this.instrumentBoundaryChecks = instrumentBoundaryChecks;
+    }
 
     /**
      * Create a new adapter instance.
@@ -46,10 +61,7 @@ public final class MethodProbesAdapter extends MethodVisitor {
      */
     public MethodProbesAdapter(final MethodProbesVisitor probesVisitor,
                                final IProbeIdGenerator idGenerator) {
-        super(InstrSupport.ASM_API_VERSION, probesVisitor);
-        this.probesVisitor = probesVisitor;
-        this.idGenerator = idGenerator;
-        this.tryCatchProbeLabels = new HashMap<Label, Label>();
+        this(probesVisitor, idGenerator, false);
     }
 
     /**
@@ -123,29 +135,34 @@ public final class MethodProbesAdapter extends MethodVisitor {
         }
     }
 
-    private void visitBoundary(int opcode, Label label) {
+    private void visitBoundary(final int opcode, final Label label) {
         if (!instrumentBoundaryChecks) {
             if (probesVisitor.isLastInsnLCMP())
                 probesVisitor.visitLCMP();
             return;
         }
-        if (isIF_ICMPxx(opcode) || /* TODO vllt sollte ich vergleich mit 0 weglassen */
-                (isBranchCompareZero(opcode) && probesVisitor.isLastInsnTrueIntInsn())) {
-            probesVisitor.visitBoundaryInsnWithProbes(opcode, label, getProbes(opcode), frame(jumpPopCount(opcode)));
-        }
+
 
         if (probesVisitor.isLastInsnLCMP()) {
             if (isBranchCompareZero(opcode)) {
                 visitLongBoundary(opcode, label);
             }
             probesVisitor.visitLCMP();
+        } else if (isIF_ICMPxx(opcode)){
+            probesVisitor.visitBoundaryInsnWithProbes(opcode, label, getProbes(opcode), frame(jumpPopCount(opcode)));
+        } else if (isBranchCompareZero(opcode)) {
+            if (opcode != Opcodes.IFEQ && opcode != Opcodes.IFNE) {
+                // comparisons with zero are ambiguous since they can also be branches on booleans
+                // but the operations IFLT, IFLE, IFGT and IFGE infer that a numerical value is on the stack
+                probesVisitor.visitBoundaryInsnWithProbes(opcode, label, getProbes(opcode), frame(jumpPopCount(opcode)));
+            } else if (probesVisitor.isTopStackValueNoBoolean()) {
+                probesVisitor.visitBoundaryInsnWithProbes(opcode, label, getProbes(opcode), frame(jumpPopCount(opcode)));
+            }
         }
-
     }
 
     private void visitLongBoundary(int opcode, Label label) {
         probesVisitor.visitLongBoundaryInsnWithProbes(opcode, label, getProbes(opcode), frame(1));
-
     }
 
     private int[] getProbes(int opcode) {
