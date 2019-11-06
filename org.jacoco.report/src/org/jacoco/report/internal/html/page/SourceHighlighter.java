@@ -102,18 +102,21 @@ final class SourceHighlighter {
 			return pre;
 		}
 
+		final String boundaryCovText = getBoundaryCovText(line.getBoundaryCounter());
+		final String boundaryCovStyle = getBoundaryCovStyle(line.getBoundaryCounter());
+
 		final String lineId = "L" + Integer.toString(lineNr);
 		final ICounter branches = line.getBranchCounter();
 		switch (branches.getStatus()) {
 		case ICounter.NOT_COVERED:
-			return span(pre, lineId, style, Styles.BRANCH_NOT_COVERED,
-					"All %2$d branches missed.", branches);
+			return span(pre, lineId, style, Styles.BRANCH_NOT_COVERED + boundaryCovStyle,
+					"All %2$d branches missed." + boundaryCovText, branches);
 		case ICounter.FULLY_COVERED:
-			return span(pre, lineId, style, Styles.BRANCH_FULLY_COVERED,
-					"All %2$d branches covered.", branches);
+			return span(pre, lineId, style, Styles.BRANCH_FULLY_COVERED + boundaryCovStyle,
+					"All %2$d branches covered." + boundaryCovText, branches);
 		case ICounter.PARTLY_COVERED:
-			return span(pre, lineId, style, Styles.BRANCH_PARTLY_COVERED,
-					"%1$d of %2$d branches missed.", branches);
+			return span(pre, lineId, style, Styles.BRANCH_PARTLY_COVERED + boundaryCovStyle,
+					"%1$d of %2$d branches missed." + boundaryCovText, branches);
 		default:
 			return pre.span(style, lineId);
 		}
@@ -127,6 +130,41 @@ final class SourceHighlighter {
 		final Integer total = Integer.valueOf(branches.getTotalCount());
 		span.attr("title", String.format(locale, title, missed, total));
 		return span;
+	}
+
+	private String getBoundaryCovText(ICounter boundaryCounter) {
+		if (boundaryCounter.getTotalCount() == 0) {
+			return "";
+		}
+
+		switch (boundaryCounter.getStatus()) {
+			case ICounter.NOT_COVERED:
+				return String.format(locale, "\n\nAll %d checks for boundary missed.", boundaryCounter.getTotalCount());
+			case ICounter.FULLY_COVERED:
+				return String.format(locale, "\n\nAll %d checks for boundary covered.", boundaryCounter.getCoveredCount());
+			case ICounter.PARTLY_COVERED:
+				return String.format(locale, "\n\n%d of %d checks for boundary missed.", boundaryCounter.getMissedCount(), boundaryCounter.getTotalCount());
+		}
+
+		return "";
+
+	}
+
+	private String getBoundaryCovStyle(ICounter boundaryCounter) {
+		if (boundaryCounter.getTotalCount() == 0) {
+			return "";
+		}
+
+		switch (boundaryCounter.getStatus()) {
+			case ICounter.NOT_COVERED:
+				return " " + Styles.BOUNDARY_NOT_COVERED;
+			case ICounter.FULLY_COVERED:
+				return " " + Styles.BOUNDARY_FULLY_COVERED;
+			case ICounter.PARTLY_COVERED:
+				return " " + Styles.BOUNDARY_PARTLY_COVERED;
+		}
+
+		return "";
 	}
 
 }

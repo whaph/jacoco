@@ -158,6 +158,7 @@ public final class MethodProbesAdapter extends MethodVisitor {
             } else if (probesVisitor.isTopStackValueNoBoolean()) {
                 probesVisitor.visitBoundaryInsnWithProbes(opcode, label, getProbes(opcode), frame(jumpPopCount(opcode)));
             }
+            // TODO when last instruction is arraylength and opcode is IFNE or IFEQ, then the check for -1 should be omitted
         }
     }
 

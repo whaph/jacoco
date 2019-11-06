@@ -98,6 +98,16 @@ public final class Styles {
 	/** Part of source code where branches are fully covered */
 	public static final String BRANCH_FULLY_COVERED = "bfc";
 
+	/** Part of source code where the boundaries are not covered */
+	public static final String BOUNDARY_NOT_COVERED = "bdrync";
+
+	/** Part of source code where the boundaries are partly covered */
+	public static final String BOUNDARY_PARTLY_COVERED = "bdrypc";
+
+	/** Part of source code where the boundaries are fully covered */
+	public static final String BOUNDARY_FULLY_COVERED = "bdryfc";
+
+
 	/**
 	 * Returns a combined style from the given styles.
 	 * 

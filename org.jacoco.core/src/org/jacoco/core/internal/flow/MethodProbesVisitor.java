@@ -216,6 +216,7 @@ public abstract class MethodProbesVisitor extends MethodVisitor {
             return false;
         }
 
+        // instruction that might leave a boolean value on the stack
         switch (lastInstruction.getOpcode()) {
             case Opcodes.BALOAD:
             case Opcodes.ILOAD:
@@ -228,8 +229,6 @@ public abstract class MethodProbesVisitor extends MethodVisitor {
             case Opcodes.ICONST_0:
             case Opcodes.ICONST_1:
                 return false;
-            case Opcodes.ARRAYLENGTH:
-                return true;
         }
 
         if (lastInstruction instanceof FieldInsnNode) {

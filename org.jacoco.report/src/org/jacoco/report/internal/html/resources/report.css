@@ -135,6 +135,19 @@ pre.source span.bpc:hover {
   background-color:#ffff80;
 }
 
+pre.source span.bdryfc {
+  outline: #29ff19 solid 2px;
+}
+
+pre.source span.bdrypc {
+  outline: #ffff00 solid 2px;
+  border: solid #d6d55f 1px;
+}
+
+pre.source span.bdrync {
+  outline: #ff000d solid 2px;
+}
+
 table.coverage {
   empty-cells:show;
   border-collapse:collapse; 

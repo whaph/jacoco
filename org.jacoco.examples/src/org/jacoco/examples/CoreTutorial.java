@@ -48,8 +48,8 @@ public final class CoreTutorial {
 			isPrime(8);
 			isPrime(0);
 			isPrime(1);
-			testBv(1,1);
-			testBv(0, 1);
+//			testBv(1,1);
+//			testBv(0, 1);
 		}
 
 		private boolean isPrime(final int n) {
@@ -197,7 +197,7 @@ public final class CoreTutorial {
 		// Create a concrete report visitor based on some supplied
 		// configuration. In this case we use the defaults
 		final HTMLFormatter htmlFormatter = new HTMLFormatter();
-		final File baseDir = new File("C:\\Users\\ayilmaz\\Documents\\");
+		final File baseDir = new File("C:\\Users\\ayilmaz\\Documents\\jacoco\\reports\\");
 		baseDir.mkdirs();
 		final IReportVisitor visitor = htmlFormatter
 				.createVisitor(new FileMultiReportOutput(baseDir));
