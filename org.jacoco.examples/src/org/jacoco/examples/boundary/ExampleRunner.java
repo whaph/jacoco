@@ -92,7 +92,6 @@ public class ExampleRunner {
         final SessionInfoStore sessionInfos = new SessionInfoStore();
 
         for (Class<?> clazz: classes) {
-
             final String targetName = clazz.getName();
             InputStream original = getTargetClass(targetName);
             final byte[] instrumented = instr.instrument(original, targetName);
