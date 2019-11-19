@@ -142,58 +142,22 @@ public final class MethodProbesAdapter extends MethodVisitor {
             return;
         }
 
-
         if (probesVisitor.isLastInsnLCMP()) {
             if (isBranchCompareZero(opcode)) {
                 visitLongBoundary(opcode, label);
             }
             probesVisitor.visitLCMP();
-        } else if (isIF_ICMPxx(opcode)){
-            probesVisitor.visitBoundaryInsnWithProbes(opcode, label, getProbes(opcode), frame(jumpPopCount(opcode)));
-        } else if (isBranchCompareZero(opcode)) {
-            if (opcode != Opcodes.IFEQ && opcode != Opcodes.IFNE) {
-                // comparisons with zero are ambiguous since they can also be branches on booleans
-                // but the operations IFLT, IFLE, IFGT and IFGE infer that a numerical value is on the stack
-                probesVisitor.visitBoundaryInsnWithProbes(opcode, label, getProbes(opcode), frame(jumpPopCount(opcode)));
-            } else if (probesVisitor.isTopStackValueNoBoolean()) {
-                probesVisitor.visitBoundaryInsnWithProbes(opcode, label, getProbes(opcode), frame(jumpPopCount(opcode)));
-            }
-            // TODO when last instruction is arraylength and opcode is IFNE or IFEQ, then the check for -1 should be omitted
+        } else if (isIF_ICMPxx(opcode) || isBranchCompareZero(opcode)){
+            probesVisitor.visitBoundaryInsnWithProbes(opcode, label, getProbes(), frame(jumpPopCount(opcode)));
         }
     }
 
     private void visitLongBoundary(int opcode, Label label) {
-        probesVisitor.visitLongBoundaryInsnWithProbes(opcode, label, getProbes(opcode), frame(1));
+        probesVisitor.visitLongBoundaryInsnWithProbes(opcode, label, getProbes(), frame(1));
     }
 
-    private int[] getProbes(int opcode) {
-        int checkCount = bvChecks(opcode);
-        int[] probeIds = new int[checkCount];
-        for (int i = 0; i < checkCount; i++) {
-            probeIds[i] = idGenerator.nextId();
-        }
-        return probeIds;
-    }
-
-    private int bvChecks(int opcode) {
-        switch (opcode) {
-            case Opcodes.IFEQ:
-            case Opcodes.IFNE:
-            case Opcodes.IF_ICMPEQ:
-            case Opcodes.IF_ICMPNE:
-                return 3;
-            case Opcodes.IFLT:
-            case Opcodes.IFGE:
-            case Opcodes.IFGT:
-            case Opcodes.IFLE:
-            case Opcodes.IF_ICMPLT:
-            case Opcodes.IF_ICMPGE:
-            case Opcodes.IF_ICMPGT:
-            case Opcodes.IF_ICMPLE:
-                return 2;
-        }
-
-        throw new IllegalArgumentException();
+    private int[] getProbes() {
+        return new int[] { idGenerator.nextId(), idGenerator.nextId() };
     }
 
     /**

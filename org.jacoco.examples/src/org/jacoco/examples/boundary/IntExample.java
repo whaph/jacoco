@@ -12,7 +12,7 @@ public class IntExample implements Runnable {
 
         testMaxValue();
 
-        testIntBugs();
+        testIntCmpZero();
     }
 
     // ----------------------------------------------------------------------
@@ -148,15 +148,33 @@ public class IntExample implements Runnable {
 
     // ----------------------------------------------------------------------
 
-    private void testIntBugs() {
+    private void testIntCmpZero() {
         intNotEqualZero(-1);
         intNotEqualZero(0);
         intNotEqualZero(1);
+
+        intGTZero(0);
+        intGTZero(1);
+
+        intGEZero(-1);
+        intGEZero(0);
     }
 
     private void intNotEqualZero(int a) {
         if (a != 0) {
             System.out.println("a != 0");
+        }
+    }
+
+    private void intGTZero(int a) {
+        if (a > 0) {
+            System.out.println("a > 0");
+        }
+    }
+
+    private void intGEZero(int a) {
+        if (a >= 0) {
+            System.out.println("a >= 0");
         }
     }
 

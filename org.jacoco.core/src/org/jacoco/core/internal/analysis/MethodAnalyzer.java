@@ -214,16 +214,8 @@ public class MethodAnalyzer extends MethodProbesVisitor {
 	}
 
 	private void visitBoundary(int[] probeIds) {
-		switch (probeIds.length) {
-			case 2:
-				builder.addCheck(probeIds[0], Boundary.Kind.LEFT);
-				builder.addCheck(probeIds[1], Boundary.Kind.RIGHT);
-				break;
-			case 3:
-				builder.addCheck(probeIds[0], Boundary.Kind.LEFT);
-				builder.addCheck(probeIds[1], Boundary.Kind.MIDDLE);
-				builder.addCheck(probeIds[2], Boundary.Kind.RIGHT);
-		}
+		builder.addCheck(probeIds[0]);
+		builder.addCheck(probeIds[1]);
 
 		builder.addBoundary(currentNode);
 	}
