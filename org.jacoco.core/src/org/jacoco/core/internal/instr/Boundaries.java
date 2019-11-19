@@ -32,8 +32,8 @@ final class Boundaries {
         switch (opcode) {
             case Opcodes.IF_ICMPEQ:
             case Opcodes.IF_ICMPNE:
-                ensureProbes(probeIds, 3);
-                return visitCheckEQNE(probeIds[0], probeIds[2], probeIds[1]);
+                ensureProbes(probeIds, 2);
+                return visitCheckEQNE(probeIds[0], probeIds[1]);
             case Opcodes.IF_ICMPLE:
             case Opcodes.IF_ICMPGT:
                 ensureProbes(probeIds, 2);
@@ -44,8 +44,8 @@ final class Boundaries {
                 return visitCheckLTGE(probeIds[0], probeIds[1]);
             case Opcodes.IFEQ:
             case Opcodes.IFNE:
-                ensureProbes(probeIds, 3);
-                return visitCheckIntCmpZero(probeIds[0], probeIds[2], probeIds[1]);
+                ensureProbes(probeIds, 2);
+                return visitCheckIntCmpZero(probeIds[0], probeIds[1]);
             case Opcodes.IFLE:
             case Opcodes.IFGT:
                 ensureProbes(probeIds, 2);
@@ -63,11 +63,10 @@ final class Boundaries {
      *
      * The stack size of the operand stack is increased by 2.
      *
-     * @param leftBvProbeId
-     * @param rightBvProbeId
+     * @param leftOrRightBvProbeId
      * @param midBvProbeId
      */
-    private int visitCheckIntCmpZero(int leftBvProbeId, int rightBvProbeId, int midBvProbeId) {
+    private int visitCheckIntCmpZero(int leftOrRightBvProbeId, int midBvProbeId) {
         // Stack[0] : I
         mv.visitInsn(Opcodes.DUP);
         // Stack[0] : I
@@ -78,30 +77,28 @@ final class Boundaries {
         // Stack[2] : I
 
         Label intermediate = new Label();
-        mv.visitJumpInsn(Opcodes.IF_ICMPNE, intermediate); // LEFT a == -1
+        mv.visitJumpInsn(Opcodes.IF_ICMPEQ, intermediate); // a == -1; LEFT
         // Stack[0] : I
-        probeInserter.insertProbe(leftBvProbeId);
-        mv.visitLabel(intermediate);
-
         mv.visitInsn(Opcodes.DUP);
         // Stack[0] : I
         // Stack[1] : I
-
-        mv.visitInsn(Opcodes.ICONST_1);
+        mv.visitInsn(Opcodes.ICONST_1); // 1
         // Stack[0] : I
         // Stack[1] : I
         // Stack[2] : I
-
-        intermediate = new Label();
-        mv.visitJumpInsn(Opcodes.IF_ICMPNE, intermediate); // RIGHT a == 1
+        mv.visitJumpInsn(Opcodes.IF_ICMPEQ, intermediate); // a == 1; RIGHT
         // Stack[0] : I
-
-        probeInserter.insertProbe(rightBvProbeId);
+        Label skipProbe = new Label();
+        mv.visitJumpInsn(Opcodes.GOTO, skipProbe);
         mv.visitLabel(intermediate);
-
+        // Stack[0] : I
+        probeInserter.insertProbe(leftOrRightBvProbeId);
+        mv.visitLabel(skipProbe);
+        // Stack[0] : I
         mv.visitInsn(Opcodes.DUP);
         // Stack[0] : I
         // Stack[1] : I
+
         intermediate = new Label();
         mv.visitJumpInsn(Opcodes.IFNE, intermediate);
         // Stack[0] : I
@@ -122,11 +119,11 @@ final class Boundaries {
         mv.visitInsn(Opcodes.DUP);
         // Stack[0] : I
         // Stack[1] : I
-        Label left = new Label();
-        mv.visitJumpInsn(Opcodes.IFNE, left);
+        Label skipLeft = new Label();
+        mv.visitJumpInsn(Opcodes.IFNE, skipLeft);
         // Stack[0] : I
-        probeInserter.insertProbe(leftBvProbeId); // a == b; LEFT
-        mv.visitLabel(left);
+        probeInserter.insertProbe(leftBvProbeId); // a == 0; LEFT
+        mv.visitLabel(skipLeft);
 
         // Stack[0] : I
         mv.visitInsn(Opcodes.DUP);
@@ -136,13 +133,10 @@ final class Boundaries {
         // Stack[0] : I
         // Stack[1] : I
         // Stack[2] : I
-        mv.visitInsn(Opcodes.IADD);
-        // Stack[0] : I
-        // Stack[1] : I
-        Label right = new Label();
-        mv.visitJumpInsn(Opcodes.IFNE, right); // a == b + 1; RIGHT
+        Label skipRight = new Label();
+        mv.visitJumpInsn(Opcodes.IF_ICMPNE, skipRight); // a == 1; RIGHT
         probeInserter.insertProbe(rightBvProbeId);
-        mv.visitLabel(right);
+        mv.visitLabel(skipRight);
         // Stack[0] : I
 
         return 2;
@@ -153,37 +147,32 @@ final class Boundaries {
         mv.visitInsn(Opcodes.DUP);
         // Stack[0] : I
         // Stack[1] : I
-        mv.visitInsn(Opcodes.ICONST_1);
+        mv.visitInsn(Opcodes.ICONST_M1);
         // Stack[0] : I
         // Stack[1] : I
         // Stack[2] : I
-        mv.visitInsn(Opcodes.ISUB);
-        Label left = new Label();
-        mv.visitJumpInsn(Opcodes.IFNE, left);
+        Label skipLeft = new Label();
+        mv.visitJumpInsn(Opcodes.IF_ICMPNE, skipLeft);
         // Stack[0] : I
-        probeInserter.insertProbe(leftBvProbeId); // a == b - 1; LEFT
-        mv.visitLabel(left);
-
+        probeInserter.insertProbe(leftBvProbeId); // a == -1; LEFT
+        mv.visitLabel(skipLeft);
         // Stack[0] : I
         mv.visitInsn(Opcodes.DUP);
         // Stack[0] : I
         // Stack[1] : I
-        // Stack[0] : I
-        // Stack[1] : I
-        Label right = new Label();
-        mv.visitJumpInsn(Opcodes.IFNE, right); // a == b; RIGHT
+        Label skipRight = new Label();
+        mv.visitJumpInsn(Opcodes.IFNE, skipRight); // a == 0; RIGHT
         probeInserter.insertProbe(rightBvProbeId);
-        mv.visitLabel(right);
+        mv.visitLabel(skipRight);
         // Stack[0] : I
 
         return 2;
     }
 
-    private int visitCheckEQNE(int leftBvProbeId, int rightBvProbeId, int midBvProbeId) {
+    private int visitCheckEQNE(int leftOrRightBvProbeId, int midBvProbeId) {
         // Stack[0]: I
         // Stack[1]: I
-        visitBv(leftBvProbeId, Opcodes.ISUB); // a == b - 1; LEFT
-        visitBv(rightBvProbeId, Opcodes.IADD); // a == b + 1; RIGHT
+        visitLeftOrRightBv(leftOrRightBvProbeId); // a == b - 1; LEFT or a == b + 1; RIGHT
         visitBv(midBvProbeId); // a == b; MIDDLE
         // Stack[0]: I
         // Stack[1]: I
@@ -250,6 +239,76 @@ final class Boundaries {
 
     /**
      *
+     * Inserts code to check if either the left OR right boundary value is being used.
+     *
+     * The stack size of the operand stack is increased by 3.
+     *
+     * @param bvProbeId the id of the left or right boundary value check
+     * @see Boundaries#visitCheckIntCmpZero(int, int)
+     * @see Boundaries#visitCheckEQNE(int, int)
+     */
+    private void visitLeftOrRightBv(int bvProbeId) {
+        // Stack[0]: I
+        // Stack[1]: I
+        mv.visitInsn(Opcodes.DUP2);
+
+        // Stack[0]: I
+        // Stack[1]: I
+        // Stack[2]: I
+        // Stack[3]: I
+        mv.visitInsn(Opcodes.ICONST_1);
+
+        // Stack[0]: I
+        // Stack[1]: I
+        // Stack[2]: I
+        // Stack[3]: I
+        // Stack[4]: I
+        mv.visitInsn(Opcodes.ISUB); // b - 1
+
+        // Stack[0]: I
+        // Stack[1]: I
+        // Stack[2]: I
+        // Stack[3]: I
+        Label intermediate = new Label();
+        mv.visitJumpInsn(Opcodes.IF_ICMPEQ, intermediate);
+
+        // Stack[0]: I
+        // Stack[1]: I
+        mv.visitInsn(Opcodes.DUP2);
+
+        // Stack[0]: I
+        // Stack[1]: I
+        // Stack[2]: I
+        // Stack[3]: I
+        mv.visitInsn(Opcodes.ICONST_1);
+
+        // Stack[0]: I
+        // Stack[1]: I
+        // Stack[2]: I
+        // Stack[3]: I
+        // Stack[4]: I
+        mv.visitInsn(Opcodes.IADD); // b + 1
+
+        // Stack[0]: I
+        // Stack[1]: I
+        // Stack[2]: I
+        // Stack[3]: I
+        mv.visitJumpInsn(Opcodes.IF_ICMPEQ, intermediate);
+
+        // Stack[0]: I
+        // Stack[1]: I
+        Label skipProbe = new Label();
+        mv.visitJumpInsn(Opcodes.GOTO, skipProbe);
+
+        // Stack[0]: I
+        // Stack[1]: I
+        mv.visitLabel(intermediate);
+        probeInserter.insertProbe(bvProbeId);
+        mv.visitLabel(skipProbe);
+    }
+
+    /**
+     *
      * The stack size of the operand stack is increased by 2.
      *
      * @param bvProbeId
@@ -274,8 +333,8 @@ final class Boundaries {
         switch (opcode) {
             case Opcodes.IFEQ:
             case Opcodes.IFNE:
-                ensureProbes(probeIds, 3);
-                return visitCheckLongEQNE(probeIds[0], probeIds[2], probeIds[1]);
+                ensureProbes(probeIds, 2);
+                return visitCheckLongEQNE(probeIds[0], probeIds[1]);
             case Opcodes.IFLE:
             case Opcodes.IFGT:
                 ensureProbes(probeIds, 2);
@@ -289,13 +348,10 @@ final class Boundaries {
         }
     }
 
-    private int visitCheckLongEQNE(int leftBvProbeId, int rightBvProbeId, int midBvProbeId) {
+    private int visitCheckLongEQNE(int leftOrRightBvProbeId, int midBvProbeId) {
         // Stack[0/1] : L
         // Stack[2/3] : L
-        visitBvLong(leftBvProbeId, Opcodes.LSUB); // a == b - 1; LEFT
-        // Stack[0/1] : L
-        // Stack[2/3] : L
-        visitBvLong(rightBvProbeId, Opcodes.LADD); // a == b + 1; RIGHT
+        visitLeftOrRightBvLong(leftOrRightBvProbeId); // a == b - 1; LEFT or a == b +1; RIGHT
         // Stack[0/1] : L
         // Stack[2/3] : L
         visitBvLong(midBvProbeId); // a == b; MIDDLE
@@ -390,6 +446,55 @@ final class Boundaries {
         // Stack[2/3] : L
         probeInserter.insertProbe(bvProbeId);
         mv.visitLabel(intermediate);
+        // Stack[0/1] : L
+        // Stack[2/3] : L
+    }
+
+    private void visitLeftOrRightBvLong(int leftOrRightBvProbeId) {
+        // Stack[0/1] : L
+        // Stack[2/3] : L
+        InstrSupport.dup4(mv);
+        // Stack[0/1] : L
+        // Stack[2/3] : L
+        // Stack[4/5] : L
+        // Stack[6/7] : L
+        mv.visitInsn(Opcodes.LCONST_1);
+        // Stack[0/1] : L
+        // Stack[2/3] : L
+        // Stack[4/5] : L
+        // Stack[6/7] : L
+        // Stack[8/9] : L
+        mv.visitInsn(Opcodes.LSUB); // a == b - 1; LEFT
+        // Stack[0/1] : L
+        // Stack[2/3] : L
+        // Stack[4/5] : L
+        // Stack[6/7] : L
+        mv.visitInsn(Opcodes.LCMP);
+        // Stack[0/1] : L
+        // Stack[2/3] : L
+        // Stack[4/5]: L
+        Label intermediate = new Label();
+        mv.visitJumpInsn(Opcodes.IFEQ, intermediate);
+
+        InstrSupport.dup4(mv);
+        // Stack[0/1] : L
+        // Stack[2/3] : L
+        // Stack[4/5] : L
+        // Stack[6/7] : L
+        mv.visitInsn(Opcodes.LCONST_1);
+
+        mv.visitInsn(Opcodes.LADD); // a == b + 1; RIGHT
+        mv.visitInsn(Opcodes.LCMP);
+
+        mv.visitJumpInsn(Opcodes.IFEQ, intermediate);
+
+        Label skipProbe = new Label();
+        mv.visitJumpInsn(Opcodes.GOTO, skipProbe);
+        // Stack[0/1] : L
+        // Stack[2/3] : L
+        mv.visitLabel(intermediate);
+        probeInserter.insertProbe(leftOrRightBvProbeId);
+        mv.visitLabel(skipProbe);
         // Stack[0/1] : L
         // Stack[2/3] : L
     }

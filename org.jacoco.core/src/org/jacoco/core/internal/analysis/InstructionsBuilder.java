@@ -55,7 +55,7 @@ class InstructionsBuilder {
 	 * temporarily as the target {@link Instruction} may not been known yet.
 	 */
 	private final List<Jump> jumps;
-	private List<Boundary.Check> currentChecks;
+	private List<Boolean> currentChecks;
 	private final HashMap<AbstractInsnNode, Boundary> boundaries;
 
 	/**
@@ -73,7 +73,7 @@ class InstructionsBuilder {
 		this.instructions = new HashMap<AbstractInsnNode, Instruction>();
 		this.currentLabel = new ArrayList<Label>(2);
 		this.jumps = new ArrayList<Jump>();
-		this.currentChecks = new LinkedList<Boundary.Check>();
+		this.currentChecks = new LinkedList<Boolean>();
 		this.boundaries = new HashMap<AbstractInsnNode, Boundary>();
 	}
 
@@ -172,13 +172,13 @@ class InstructionsBuilder {
 		return boundaries;
 	}
 
-	void addCheck(int probeId, Boundary.Kind kind) {
+	void addCheck(int probeId) {
 		final boolean covered = probes != null && probes[probeId];
-		currentChecks.add(new Boundary.Check(covered, kind));
+		currentChecks.add(covered);
 	}
 
 	void addBoundary(AbstractInsnNode currentNode) {
-		boundaries.put(currentNode, new Boundary(currentLine, new LinkedList<Boundary.Check>(currentChecks)));
+		boundaries.put(currentNode, new Boundary(currentLine, new LinkedList<Boolean>(currentChecks)));
 		currentChecks.clear();
 	}
 

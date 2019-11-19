@@ -31,6 +31,8 @@ import java.util.Map;
 public class ExampleRunner {
     /**
      * A class loader that loads classes from in-memory data.
+     *
+     * @see org.jacoco.examples.CoreTutorial.MemoryClassLoader Original
      */
     public static class MemoryClassLoader extends ClassLoader {
 
@@ -78,7 +80,7 @@ public class ExampleRunner {
      * @throws Exception
      *             in case of errors
      */
-    public void execute(Class<?>... classes) throws Exception {
+    public void execute(String destination, String source, Class<?>... classes) throws Exception {
 
         // For instrumentation and runtime we need a IRuntime instance
         // to collect execution data:
@@ -92,7 +94,6 @@ public class ExampleRunner {
         final SessionInfoStore sessionInfos = new SessionInfoStore();
 
         for (Class<?> clazz: classes) {
-
             final String targetName = clazz.getName();
             InputStream original = getTargetClass(targetName);
             final byte[] instrumented = instr.instrument(original, targetName);
@@ -128,16 +129,16 @@ public class ExampleRunner {
         }
 
         final IBundleCoverage node = coverageBuilder.getBundle("test report");
-        createReport(node, executionData, sessionInfos);
+        createReport(node, executionData, sessionInfos, destination, source);
     }
 
-    private void createReport(final IBundleCoverage bundleCoverage, ExecutionDataStore executionData, SessionInfoStore sessionInfos)
+    private void createReport(final IBundleCoverage bundleCoverage, ExecutionDataStore executionData, SessionInfoStore sessionInfos, String destination, String source)
             throws IOException {
 
         // Create a concrete report visitor based on some supplied
         // configuration. In this case we use the defaults
         final HTMLFormatter htmlFormatter = new HTMLFormatter();
-        final File baseDir = new File("C:\\Users\\ayilmaz\\Documents\\jacoco\\reports\\");
+        final File baseDir = new File(destination);
         baseDir.mkdirs();
         final IReportVisitor visitor = htmlFormatter
                 .createVisitor(new FileMultiReportOutput(baseDir));
@@ -151,7 +152,7 @@ public class ExampleRunner {
         // Populate the report structure with the bundle coverage information.
         // Call visitGroup if you need groups in your report.
         visitor.visitBundle(bundleCoverage, new DirectorySourceFileLocator(
-                new File("C:\\Users\\ayilmaz\\Documents\\git\\BA\\bv-jacoco\\jacoco\\org.jacoco.examples\\src\\"), "utf-8", 4));
+                new File(source), "utf-8", 4));
 
         // Signal end of structure information to allow report to write all
         // information out
@@ -164,8 +165,8 @@ public class ExampleRunner {
         return getClass().getResourceAsStream(resource);
     }
 
-    private void execute() throws Exception {
-        execute(IntExample.class, LongExample.class, BooleanExample.class, ByteExample.class, ShortExample.class);
+    private void execute(String destination, String source) throws Exception {
+        execute(destination, source, IntExample.class, LongExample.class, BooleanExample.class, ByteExample.class, ShortExample.class);
     }
 
     /**
@@ -177,6 +178,8 @@ public class ExampleRunner {
      *             in case of errors
      */
     public static void main(final String[] args) throws Exception {
-        new ExampleRunner(System.out).execute();
+        final String destination = args[0]; // "C:\\Users\\ayilmaz\\Documents\\jacoco\\reports\\";
+        final String source = args[1]; // "C:\\Users\\ayilmaz\\Documents\\git\\BA\\bv-jacoco\\jacoco\\org.jacoco.examples\\src\\";
+        new ExampleRunner(System.out).execute(destination, source);
     }
 }

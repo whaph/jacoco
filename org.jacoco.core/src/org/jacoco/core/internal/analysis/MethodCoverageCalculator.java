@@ -78,7 +78,6 @@ class MethodCoverageCalculator implements IFilterOutput {
 			}
 		}
 
-
 		applyMerges();
 		applyReplacements();
 		ensureCapacity(coverage);

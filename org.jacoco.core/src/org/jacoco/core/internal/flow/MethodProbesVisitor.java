@@ -25,8 +25,6 @@ import org.objectweb.asm.tree.*;
  */
 public abstract class MethodProbesVisitor extends MethodVisitor {
 
-    protected final LastInsnMemorizer memorizer;
-
     /**
      * New visitor instance without delegate visitor.
      */
@@ -40,9 +38,7 @@ public abstract class MethodProbesVisitor extends MethodVisitor {
      * @param mv optional next visitor in chain
      */
     public MethodProbesVisitor(final MethodVisitor mv) {
-        super(InstrSupport.ASM_API_VERSION, null);
-        this.memorizer = new LastInsnMemorizer(mv);
-        this.mv = this.memorizer;
+        super(InstrSupport.ASM_API_VERSION, mv);
     }
 
     /**
@@ -57,16 +53,9 @@ public abstract class MethodProbesVisitor extends MethodVisitor {
 
     @Override
     public void visitInsn(int opcode) {
-        if (opcode == Opcodes.LCMP) {
-            memorizer.setLastInstruction(new InsnNode(opcode));
-        } else {
-            super.visitInsn(opcode);
-        }
+        super.visitInsn(opcode);
     }
 
-    void visitLCMP() {
-        super.visitInsn(Opcodes.LCMP);
-    }
 
     /**
      * Visits a jump instruction. A probe with the given id should be inserted
@@ -204,53 +193,4 @@ public abstract class MethodProbesVisitor extends MethodVisitor {
         methodNode.accept(methodVisitor);
     }
 
-    /**
-     * Checks if the last instruction might leave a boolean on the stack.
-     *
-     * @return <code>true</code> if last instruction is not <code>null</code> and
-     * is sure to never leave a boolean on the stack, else <code>false</code>
-     */
-    boolean isTopStackValueNoBoolean() {
-        AbstractInsnNode lastInstruction = memorizer.getLastInstruction();
-        if (lastInstruction == null) {
-            return false;
-        }
-
-        // instruction that might leave a boolean value on the stack
-        switch (lastInstruction.getOpcode()) {
-            case Opcodes.BALOAD:
-            case Opcodes.ILOAD:
-            case Opcodes.IAND:
-            case Opcodes.IOR:
-            case Opcodes.IXOR:
-            case Opcodes.LAND:
-            case Opcodes.LOR:
-            case Opcodes.LXOR:
-            case Opcodes.ICONST_0:
-            case Opcodes.ICONST_1:
-                return false;
-        }
-
-        if (lastInstruction instanceof FieldInsnNode) {
-            return !((FieldInsnNode) lastInstruction).desc.equals("Z");
-        }
-
-        if (lastInstruction instanceof MethodInsnNode) {
-            return !Type.getReturnType(((MethodInsnNode) lastInstruction).desc).getDescriptor().equals("Z");
-        }
-
-        if (lastInstruction instanceof InvokeDynamicInsnNode) {
-            return !Type.getReturnType(((InvokeDynamicInsnNode) lastInstruction).desc).getDescriptor().equals("Z");
-        }
-
-        return true;
-    }
-
-    boolean isLastInsnLCMP() {
-        AbstractInsnNode lastInstruction = memorizer.getLastInstruction();
-        if (lastInstruction == null) {
-            return false;
-        }
-        return lastInstruction.getOpcode() == Opcodes.LCMP;
-    }
 }

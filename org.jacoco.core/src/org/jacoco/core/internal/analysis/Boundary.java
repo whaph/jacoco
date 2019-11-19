@@ -21,9 +21,9 @@ import java.util.List;
 public final class Boundary {
 
     private final int line;
-    private final List<Check> checks;
+    private final List<Boolean> checks;
 
-    public Boundary(int line, List<Check> checks) {
+    public Boundary(int line, List<Boolean> checks) {
         this.line = line;
         this.checks = checks;
     }
@@ -32,44 +32,20 @@ public final class Boundary {
         return line;
     }
 
-    public List<Check> getChecks() {
+    public List<Boolean> getChecks() {
         return checks;
     }
 
     public ICounter getCounter() {
         int covered = 0;
-        for (Check check : checks) {
-            if (check.isCovered()) {
+        for (Boolean check : checks) {
+            if (check) {
                 covered++;
             }
         }
 
         int missed = checks.size() - covered;
         return CounterImpl.getInstance(missed, covered);
-    }
-
-    enum Kind {
-        LEFT,
-        MIDDLE,
-        RIGHT
-    }
-
-    public static final class Check {
-        private final boolean covered;
-        private final Kind kind;
-
-        public Check(boolean covered, Kind kind) {
-            this.covered = covered;
-            this.kind = kind;
-        }
-
-        public boolean isCovered() {
-            return covered;
-        }
-
-        public Kind getKind() {
-            return kind;
-        }
     }
 
     Boundary merge(Boundary other) {
@@ -81,15 +57,11 @@ public final class Boundary {
             throw new IllegalArgumentException();
         }
 
-        List<Check> newChecks = new ArrayList<Check>(checks.size());
+        List<Boolean> newChecks = new ArrayList<Boolean>(checks.size());
         for (int i = 0; i < checks.size(); i++) {
-            Check check = checks.get(i);
-            Check otherCheck = other.checks.get(i);
-            if (check.getKind() != otherCheck.getKind()) {
-                throw new IllegalArgumentException();
-            }
-
-            Check newCheck = new Check(check.covered || otherCheck.covered, check.getKind());
+            Boolean check = checks.get(i);
+            Boolean otherCheck = other.checks.get(i);
+            Boolean newCheck = check || otherCheck;
             newChecks.set(i, newCheck);
         }
 
