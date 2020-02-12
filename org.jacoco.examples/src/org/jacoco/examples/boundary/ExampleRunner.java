@@ -28,6 +28,11 @@ import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Example to run coverage analysis including boundary value coverage.
+ *
+ * @author Aykut Yilmaz
+ */
 public class ExampleRunner {
     /**
      * A class loader that loads classes from in-memory data.
@@ -170,7 +175,7 @@ public class ExampleRunner {
     }
 
     /**
-     * Entry point to run this examples as a Java application.
+     * Entry point to run this Java application.
      *
      * @param args
      *            list of program arguments
@@ -178,8 +183,8 @@ public class ExampleRunner {
      *             in case of errors
      */
     public static void main(final String[] args) throws Exception {
-        final String destination = args[0]; // "C:\\Users\\ayilmaz\\Documents\\jacoco\\reports\\";
-        final String source = args[1]; // "C:\\Users\\ayilmaz\\Documents\\git\\BA\\bv-jacoco\\jacoco\\org.jacoco.examples\\src\\";
+        final String destination = args[0]; // destination folder for the report, e.g.: "C:\\Users\\ayilmaz\\Documents\\jacoco\\reports\\";
+        final String source = args[1]; // root folder of the source code, e.g.: "C:\\Users\\ayilmaz\\Documents\\git\\BA\\bv-jacoco\\jacoco\\org.jacoco.examples\\src\\";
         new ExampleRunner(System.out).execute(destination, source);
     }
 }
